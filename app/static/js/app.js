@@ -181,6 +181,50 @@ function toggleSidebarOverlay() {
 
 document.addEventListener('DOMContentLoaded', initSidebar);
 
+// Load site-level settings (title, logo, ICP) and inject footer
+document.addEventListener('DOMContentLoaded', async function() {
+    try {
+        // Use fetch without credentials since this is a public endpoint
+        const resp = await fetch('/api/settings/site');
+        if (!resp.ok) return;
+        const data = await resp.json();
+        if (!data) return;
+        // update header app logos
+        const logoUrl = data.logo_url;
+        const title = data.site_title || null;
+        document.querySelectorAll('.app-logo').forEach(function(el){
+            if (logoUrl) {
+                // replace icon with image
+                el.innerHTML = `<img src="${logoUrl}" alt="Logo"><span>${escapeHtml(title || el.querySelector('span')?.textContent || 'SnowDrive')}</span>`;
+            } else if (title) {
+                const span = el.querySelector('span'); if (span) span.textContent = title;
+            }
+        });
+        document.querySelectorAll('.auth-logo').forEach(function(el){
+            if (logoUrl) {
+                el.innerHTML = `<img src="${logoUrl}" alt="Logo">`;
+            }
+        });
+
+        // inject footer
+        const existing = document.querySelector('.site-footer');
+        if (!existing) {
+            const f = document.createElement('div'); f.className = 'site-footer';
+            f.innerHTML = `<div class="footer-line">由 <i class="fa-solid fa-snowflake"></i> <a href='https://snowdrive.lclty.cn' target='_blank'>SnowDrive</a> 驱动 | <a href='https://github.com/lclty/snowdrive' target='_blank'>访问源代码</a></div>`;
+            document.body.appendChild(f);
+            document.body.classList.add('has-footer');
+        }
+        // ICP display: if enabled, show on a separate line
+        if (data.icp_enabled && data.icp_number) {
+            const f = document.querySelector('.site-footer');
+            const icpLine = document.createElement('div');
+            icpLine.className = 'footer-icp';
+            icpLine.innerHTML = `<a href='https://beian.miit.gov.cn' target='_blank'>${escapeHtml(data.icp_number)}</a>`;
+            if (f) f.appendChild(icpLine);
+        }
+    } catch (e) { /* ignore */ }
+});
+
 
 // ─── API Helpers ──────────────────────────────────────────────────
 

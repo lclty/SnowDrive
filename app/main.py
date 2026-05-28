@@ -20,6 +20,7 @@ def create_app() -> Flask:
     # Ensure userdata directories exist
     os.makedirs(Config.USERDATA_DIR, exist_ok=True)
     os.makedirs(Config.AVATAR_DIR, exist_ok=True)
+    os.makedirs(Config.LOGO_DIR, exist_ok=True)
     os.makedirs(Config.DATA_DIR, exist_ok=True)
 
     # Initialize database

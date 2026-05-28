@@ -18,6 +18,7 @@ class Config:
     USERDATA_DIR = "/userdata"
     DB_PATH = os.path.join(USERDATA_DIR, "snowdrive.db")
     AVATAR_DIR = os.path.join(USERDATA_DIR, "avatars")
+    LOGO_DIR = os.path.join(USERDATA_DIR, "logo")
 
     # Upload limits (unset = no enforced limit)
     MAX_CONTENT_LENGTH = None

@@ -6,7 +6,6 @@
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="app-logo"><i class="fa-solid fa-snowflake"></i><span>SnowDrive</span></div>
-            <button class="sidebar-toggle" id="sidebar-toggle"><i class="fa-solid fa-bars"></i></button>
         </div>
         <nav class="sidebar-nav">
             <a href="/files" class="nav-item active"><i class="fa-solid fa-folder-open"></i><span>文件管理</span></a>
@@ -19,6 +18,7 @@
                 <span class="user-name">{{ username }}</span>
             </div>
             <button class="btn btn-ghost btn-sm" id="logout-btn"><i class="fa-solid fa-right-from-bracket"></i><span>退出</span></button>
+            <button class="sidebar-toggle" id="sidebar-toggle"><i class="fa-solid fa-bars"></i><span>收起侧边栏</span></button>
         </div>
     </aside>
 
@@ -37,12 +37,12 @@
 
         <div class="toolbar">
             <div class="toolbar-left">
+                <button class="btn btn-select-all btn-sm" id="btn-select-toggle"><i class="fa-solid fa-square-check"></i> 全选</button>
                 <button class="btn btn-primary btn-sm" id="btn-new-folder"><i class="fa-solid fa-folder-plus"></i> 新建文件夹</button>
                 <button class="btn btn-secondary btn-sm" id="btn-new-file"><i class="fa-solid fa-file-circle-plus"></i> 新建文件</button>
-                <button class="btn btn-secondary btn-sm" id="btn-select-toggle"><i class="fa-solid fa-square-check"></i> 全选</button>
                 <button class="btn btn-secondary btn-sm" id="btn-upload"><i class="fa-solid fa-upload"></i> 上传</button>
-                <button class="btn btn-secondary btn-sm" id="btn-remote-download"><i class="fa-solid fa-cloud-arrow-down"></i> 远程下载</button>
                 <button class="btn btn-secondary btn-sm" id="btn-download-selected" disabled><i class="fa-solid fa-download"></i> 下载</button>
+                <button class="btn btn-secondary btn-sm" id="btn-remote-download"><i class="fa-solid fa-cloud-arrow-down"></i> 远程下载</button>
                 <button class="btn btn-danger btn-sm" id="btn-delete-selected" disabled><i class="fa-solid fa-trash"></i> 删除</button>
             </div>
             <div class="toolbar-right">
@@ -97,6 +97,7 @@
             </div>
         </div>
     </div>
+    <div class="dmw-resize-handle" id="dmw-resize-handle"></div>
 </div>
 
 <!-- Modals -->

@@ -91,14 +91,19 @@
         var panels = document.getElementById('method-panels');
         tabs.innerHTML = ''; panels.innerHTML = '';
 
-        methods.forEach(function(m, i) {
-            var icon = m.type === 'totp' ? 'fa-mobile-screen-button' : 'fa-fingerprint';
-            var label = m.type === 'totp' ? '验证器' : 'Passkey';
+        // Group methods by type
+        var hasTotp = methods.some(function(m) { return m.type === 'totp'; });
+        var hasWebAuthn = methods.some(function(m) { return m.type === 'webauthn'; });
+
+        var tabIndex = 0;
+
+        // TOTP tab (consolidated - any TOTP code works)
+        if (hasTotp) {
             var tab = document.createElement('button');
             tab.type = 'button';
-            tab.className = 'method-tab' + (i === 0 ? ' active' : '');
-            tab.innerHTML = '<i class="fa-solid ' + icon + '"></i> ' + label;
-            tab.dataset.index = i;
+            tab.className = 'method-tab' + (tabIndex === 0 ? ' active' : '');
+            tab.innerHTML = '<i class="fa-solid fa-mobile-screen-button"></i> 验证器';
+            tab.dataset.index = tabIndex;
             tab.addEventListener('click', function() {
                 document.querySelectorAll('.method-tab').forEach(function(t) { t.classList.remove('active'); });
                 this.classList.add('active');
@@ -109,28 +114,47 @@
 
             var panel = document.createElement('div');
             panel.className = 'method-panel';
-            panel.id = 'panel-' + i;
-            panel.style.display = i === 0 ? 'block' : 'none';
-
-            if (m.type === 'totp') {
-                panel.innerHTML = '<p class="step-description">输入身份验证器中的 6 位验证码</p><div class="form-group"><input type="text" class="totp-input" placeholder="000000" inputmode="numeric" maxlength="6"></div><button class="btn btn-primary btn-full submit-2fa" data-method-id="' + m.id + '" data-method-type="totp"><i class="fa-solid fa-check"></i> 验证</button>';
-            } else if (m.type === 'webauthn') {
-                panel.innerHTML = '<p class="step-description">使用您的设备进行验证</p><button class="btn btn-primary btn-full submit-2fa" data-method-id="' + m.id + '" data-method-type="webauthn"><i class="fa-solid fa-fingerprint"></i> 使用 Passkey 验证</button>';
-            }
+            panel.id = 'panel-' + tabIndex;
+            panel.style.display = tabIndex === 0 ? 'block' : 'none';
+            panel.innerHTML = '<p class="step-description">输入任意身份验证器中的 6 位验证码</p><div class="form-group"><input type="text" class="totp-input" placeholder="000000" inputmode="numeric" maxlength="6"></div><button class="btn btn-primary btn-full submit-2fa" data-method-type="totp"><i class="fa-solid fa-check"></i> 验证</button>';
             panels.appendChild(panel);
-        });
+            tabIndex++;
+        }
+
+        // Passkey tab (consolidated - auto-detect device)
+        if (hasWebAuthn) {
+            var tab = document.createElement('button');
+            tab.type = 'button';
+            tab.className = 'method-tab' + (tabIndex === 0 ? ' active' : '');
+            tab.innerHTML = '<i class="fa-solid fa-fingerprint"></i> Passkey';
+            tab.dataset.index = tabIndex;
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.method-tab').forEach(function(t) { t.classList.remove('active'); });
+                this.classList.add('active');
+                document.querySelectorAll('.method-panel').forEach(function(p) { p.style.display = 'none'; });
+                document.getElementById('panel-' + this.dataset.index).style.display = 'block';
+            });
+            tabs.appendChild(tab);
+
+            var panel = document.createElement('div');
+            panel.className = 'method-panel';
+            panel.id = 'panel-' + tabIndex;
+            panel.style.display = tabIndex === 0 ? 'block' : 'none';
+            panel.innerHTML = '<p class="step-description">使用您的设备进行验证</p><button class="btn btn-primary btn-full submit-2fa" data-method-type="webauthn"><i class="fa-solid fa-fingerprint"></i> 使用 Passkey 验证</button>';
+            panels.appendChild(panel);
+            tabIndex++;
+        }
 
         // Hook up submit buttons
         document.querySelectorAll('.submit-2fa').forEach(function(btn) {
             btn.addEventListener('click', async function() {
                 var type = this.dataset.methodType;
-                var methodId = this.dataset.methodId;
                 setLoading(this, true);
 
                 if (type === 'totp') {
                     var code = this.parentElement.querySelector('.totp-input').value.trim();
                     if (code.length !== 6) { showError('请输入 6 位验证码。'); setLoading(this, false); return; }
-                    var resp = await fetch('/api/auth/login-2fa', { method: 'POST', headers: {'Content-Type': 'application/json'}, credentials: 'same-origin', body: JSON.stringify({method_type: 'totp', method_id: parseInt(methodId), code: code}) });
+                    var resp = await fetch('/api/auth/login-2fa', { method: 'POST', headers: {'Content-Type': 'application/json'}, credentials: 'same-origin', body: JSON.stringify({method_type: 'totp', code: code}) });
                     var data = await resp.json();
                     if (resp.ok && data.success) { window.location.href = '/files'; }
                     else { showError(data.error || 'Verification failed.'); }

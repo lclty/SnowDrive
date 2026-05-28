@@ -312,14 +312,23 @@ def login_2fa():
 
     # TOTP
     if method_type == "totp":
-        if not code or not method_id:
+        if not code:
             return jsonify({"error": "TOTP code required."}), 400
-        method = get_2fa_method(method_id)
-        if not method or method["user_id"] != user["id"]:
-            return jsonify({"error": "Invalid 2FA method."}), 400
-        totp = pyotp.TOTP(method["totp_secret"])
-        if totp.verify(code, valid_window=1):
-            update_2fa_last_used(method_id)
+        # Try all TOTP methods for this user
+        methods = get_user_2fa_methods(user["id"])
+        totp_methods = [m for m in methods if m["method_type"] == "totp"]
+        if not totp_methods:
+            return jsonify({"error": "No TOTP methods configured."}), 400
+        verified = False
+        verified_method_id = None
+        for m in totp_methods:
+            totp = pyotp.TOTP(m["totp_secret"])
+            if totp.verify(code, valid_window=1):
+                verified = True
+                verified_method_id = m["id"]
+                break
+        if verified:
+            update_2fa_last_used(verified_method_id)
             return _complete_login(user)
         return jsonify({"error": "Invalid TOTP code."}), 401
 

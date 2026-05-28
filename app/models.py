@@ -84,6 +84,11 @@ def init_db():
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         );
 
+        CREATE TABLE IF NOT EXISTS site_settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        );
+
         CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token_hash);
         CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
         CREATE INDEX IF NOT EXISTS idx_2fa_user ON user_2fa_methods(user_id);
@@ -235,6 +240,28 @@ def update_2fa_last_used(method_id: int):
 def delete_2fa_method(method_id: int):
     db = get_db()
     db.execute("DELETE FROM user_2fa_methods WHERE id = ?", (method_id,))
+    db.commit()
+
+def rename_2fa_method(method_id: int, name: str):
+    db = get_db()
+    db.execute("UPDATE user_2fa_methods SET method_name = ? WHERE id = ?", (name, method_id))
+    db.commit()
+
+# ─── Site Settings ────────────────────────────────────────────────
+
+def get_site_setting(key: str) -> str | None:
+    db = get_db()
+    row = db.execute("SELECT value FROM site_settings WHERE key = ?", (key,)).fetchone()
+    return row["value"] if row else None
+
+def set_site_setting(key: str, value: str):
+    db = get_db()
+    db.execute("INSERT OR REPLACE INTO site_settings (key, value) VALUES (?, ?)", (key, value))
+    db.commit()
+
+def delete_site_setting(key: str):
+    db = get_db()
+    db.execute("DELETE FROM site_settings WHERE key = ?", (key,))
     db.commit()
 
 # ─── Download Tasks ───────────────────────────────────────────────

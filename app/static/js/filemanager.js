@@ -149,6 +149,9 @@
             if (dmw) dmw.classList.remove('open');
         });
 
+        // DMW Drag and Resize
+        setupDmwDragAndResize();
+
         // Tabs inside DMW
         document.addEventListener('click', function(e) {
             const tab = e.target.closest('.dmw-tab');
@@ -208,7 +211,16 @@
             }
 
             filesData = data.files;
-            selectedFiles.clear();
+            // Preserve selection across silent refreshes
+            if (silent) {
+                // Remove selections for files that no longer exist
+                const currentPaths = new Set(filesData.map(f => f.path));
+                for (const p of selectedFiles) {
+                    if (!currentPaths.has(p)) selectedFiles.delete(p);
+                }
+            } else {
+                selectedFiles.clear();
+            }
             updateSelectionUI();
             renderBreadcrumbs(data.breadcrumbs);
             renderFiles();
@@ -889,6 +901,83 @@
                 task.status = 'failed';
                 task.error_message = e.message || 'Upload error';
                 renderUploadTasks();
+            }
+        }
+    }
+
+    // ─── DMW Drag & Resize ────────────────────────────────────────
+    function setupDmwDragAndResize() {
+        const dmw = document.getElementById('download-mini-window');
+        const header = document.getElementById('dmw-header');
+        const resizeHandle = document.getElementById('dmw-resize-handle');
+        if (!dmw) return;
+
+        // Drag
+        if (header) {
+            let dragInfo = null;
+            header.addEventListener('mousedown', function(e) {
+                if (e.target.closest('button')) return; // Don't drag on buttons
+                e.preventDefault();
+                const rect = dmw.getBoundingClientRect();
+                dragInfo = {
+                    startX: e.clientX,
+                    startY: e.clientY,
+                    startLeft: rect.left,
+                    startTop: rect.top,
+                };
+                document.addEventListener('mousemove', onDrag);
+                document.addEventListener('mouseup', onDragEnd);
+            });
+
+            function onDrag(e) {
+                if (!dragInfo) return;
+                const dx = e.clientX - dragInfo.startX;
+                const dy = e.clientY - dragInfo.startY;
+                dmw.style.transform = 'none';
+                dmw.style.top = (dragInfo.startTop + dy) + 'px';
+                dmw.style.left = (dragInfo.startLeft + dx) + 'px';
+            }
+
+            function onDragEnd() {
+                dragInfo = null;
+                document.removeEventListener('mousemove', onDrag);
+                document.removeEventListener('mouseup', onDragEnd);
+            }
+        }
+
+        // Resize
+        if (resizeHandle) {
+            let resizeInfo = null;
+            resizeHandle.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const rect = dmw.getBoundingClientRect();
+                resizeInfo = {
+                    startX: e.clientX,
+                    startY: e.clientY,
+                    startWidth: rect.width,
+                    startHeight: rect.height,
+                    startTop: rect.top,
+                    startLeft: rect.left,
+                };
+                document.addEventListener('mousemove', onResize);
+                document.addEventListener('mouseup', onResizeEnd);
+            });
+
+            function onResize(e) {
+                if (!resizeInfo) return;
+                const dx = e.clientX - resizeInfo.startX;
+                const dy = e.clientY - resizeInfo.startY;
+                const newWidth = Math.max(280, resizeInfo.startWidth + dx);
+                const newHeight = Math.max(150, Math.min(480, resizeInfo.startHeight + dy));
+                dmw.style.width = newWidth + 'px';
+                dmw.style.height = newHeight + 'px';
+            }
+
+            function onResizeEnd() {
+                resizeInfo = null;
+                document.removeEventListener('mousemove', onResize);
+                document.removeEventListener('mouseup', onResizeEnd);
             }
         }
     }
