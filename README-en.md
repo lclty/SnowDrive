@@ -12,7 +12,7 @@
 ## 🌐 Online Experience
 
 - 🏠 Homepage: [snowdrive.lclty.cn](https://snowdrive.lclty.cn)
-- 🎮 Live Demo: [demo.snowdrive.lclty.cn](https://demo.snowdrive.lclty.cn)
+- 🎮 Live Demo: [snowdrive.lclty.cn/demo](https://snowdrive.lclty.cn/demo)
 
 ## ✨ Features
 

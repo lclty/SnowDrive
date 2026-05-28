@@ -14,7 +14,7 @@
 ## 🌐 在线体验
 
 - 🏠 项目主页：[snowdrive.lclty.cn](https://snowdrive.lclty.cn)
-- 🎮 在线演示：[demo.snowdrive.lclty.cn](https://demo.snowdrive.lclty.cn)
+- 🎮 在线演示：[snowdrive.lclty.cn/demo](https://snowdrive.lclty.cn/demo)
 
 ## ✨ 功能特性
 
