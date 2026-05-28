@@ -1,0 +1,87 @@
+﻿{% extends "base.html" %}
+{% block title %}文件管理 - SnowDrive{% endblock %}
+{% block body %}
+<div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="app-logo"><i class="fa-solid fa-snowflake"></i><span>SnowDrive</span></div>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="/files" class="nav-item active"><i class="fa-solid fa-folder-open"></i><span>文件管理</span></a>
+            <a href="/settings" class="nav-item"><i class="fa-solid fa-gear"></i><span>设置</span></a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="storage-info" id="storage-info"><i class="fa-solid fa-hard-drive"></i><span>加载中...</span></div>
+            <div class="user-info">
+                <div class="user-avatar-sm" id="sidebar-avatar"><i class="fa-solid fa-user"></i></div>
+                <span class="user-name">DemoUser</span>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="logout-btn"><i class="fa-solid fa-rotate-left"></i><span>重置</span></button>
+            <button class="sidebar-toggle" id="sidebar-toggle"><i class="fa-solid fa-bars"></i><span>收起侧边栏</span></button>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="top-bar">
+            <div class="top-bar-left">
+                <button class="btn btn-icon mobile-sidebar-toggle" id="mobile-sidebar-toggle"><i class="fa-solid fa-bars"></i></button>
+                <div class="breadcrumbs" id="breadcrumbs"></div>
+            </div>
+            <div class="top-bar-right">
+                <div class="search-box"><i class="fa-solid fa-search"></i><input type="text" id="search-input" placeholder="搜索文件..."></div>
+                <button class="btn btn-icon theme-toggle-btn-inline" id="theme-toggle-inline" title="切换深浅色模式"><i class="fa-solid fa-moon"></i></button>
+            </div>
+        </header>
+
+        <!-- Demo Mode Announcement -->
+        <div class="demo-banner" style="background-color: #fff3cd; border-bottom: 1px solid #ffc107; padding: 12px 20px; text-align: center; color: #856404; font-weight: 500;">
+            <i class="fa-solid fa-triangle-exclamation"></i> Demo 无法修改服务器内容，请自行部署查看 | <a href="https://snowdrive.lclty.cn" target="_blank" style="color: #856404; text-decoration: underline;">官方网站</a> | <a href="https://github.com/lclty/SnowDrive" target="_blank" style="color: #856404; text-decoration: underline;">GitHub</a>
+        </div>
+
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <button class="btn btn-select-all btn-sm" id="btn-select-toggle"><i class="fa-solid fa-square-check"></i> 全选</button>
+                <button class="btn btn-disabled btn-sm" id="btn-new-folder" title="演示模式已禁用"><i class="fa-solid fa-folder-plus"></i> 新建文件夹</button>
+                <button class="btn btn-disabled btn-sm" id="btn-new-file" title="演示模式已禁用"><i class="fa-solid fa-file-circle-plus"></i> 新建文件</button>
+                <button class="btn btn-disabled btn-sm" id="btn-upload" title="演示模式已禁用"><i class="fa-solid fa-upload"></i> 上传</button>
+                <button class="btn btn-secondary btn-sm" id="btn-download-selected" disabled><i class="fa-solid fa-download"></i> 下载</button>
+                <button class="btn btn-disabled btn-sm" id="btn-remote-download" title="演示模式已禁用"><i class="fa-solid fa-cloud-arrow-down"></i> 远程下载</button>
+                <button class="btn btn-danger btn-sm" id="btn-delete-selected" disabled><i class="fa-solid fa-trash"></i> 删除</button>
+            </div>
+            <div class="toolbar-right">
+                <div class="view-toggle">
+                    <button class="btn btn-icon view-btn active" data-view="list"><i class="fa-solid fa-list"></i></button>
+                    <button class="btn btn-icon view-btn" data-view="grid"><i class="fa-solid fa-table-cells"></i></button>
+                </div>
+                <select id="sort-select" class="select-sm">
+                    <option value="name">按名称</option>
+                    <option value="modified">按日期</option>
+                    <option value="size">按大小</option>
+                    <option value="type">按类型</option>
+                </select>
+                <button class="btn btn-icon" id="sort-order-btn"><i class="fa-solid fa-arrow-down-a-z"></i></button>
+            </div>
+        </div>
+
+        <div class="file-area" id="file-area">
+            <div class="loading-container" id="loading-indicator"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><p>加载中...</p></div>
+            <div class="file-list list-view" id="file-list"></div>
+            <div class="empty-state" id="empty-state" style="display:none;"><i class="fa-solid fa-folder-open fa-4x"></i><h3>此文件夹为空</h3><p>演示模式下没有更多文件</p></div>
+            <div class="empty-state error-state" id="error-state" style="display:none;"><i class="fa-solid fa-triangle-exclamation fa-4x"></i><h3>加载失败</h3><p id="error-state-message"></p><button class="btn btn-primary" onclick="loadFiles()">重试</button></div>
+        </div>
+
+        <div class="info-bar" id="info-bar">
+            <span id="file-count-info">—</span>
+            <span id="selection-info" style="display:none;"></span>
+        </div>
+    </main>
+</div>
+
+<!-- Modals -->
+<div class="modal" id="modal-rename"><div class="modal-content modal-sm"><div class="modal-header"><h3><i class="fa-solid fa-pen-to-square"></i> 重命名</h3><button class="modal-close">&times;</button></div><div class="modal-body"><div class="form-group"><label>新名称</label><input type="text" id="rename-input" autofocus></div></div><div class="modal-footer"><button class="btn btn-secondary modal-cancel">取消</button><button class="btn btn-primary" id="confirm-rename">确认</button></div></div></div>
+<div class="modal" id="modal-delete"><div class="modal-content modal-sm"><div class="modal-header"><h3><i class="fa-solid fa-triangle-exclamation"></i> 确认删除</h3><button class="modal-close">&times;</button></div><div class="modal-body"><p id="delete-message"></p></div><div class="modal-footer"><button class="btn btn-secondary modal-cancel">取消</button><button class="btn btn-danger" id="confirm-delete">删除</button></div></div></div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/filemanager.js') }}"></script>
+{% endblock %}

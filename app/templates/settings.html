@@ -1,0 +1,47 @@
+﻿{% extends "base.html" %}
+{% block title %}设置 - SnowDrive (Demo){% endblock %}
+{% block body %}
+<div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header"><div class="app-logo"><i class="fa-solid fa-snowflake"></i><span>SnowDrive</span></div></div>
+        <nav class="sidebar-nav">
+            <a href="/files" class="nav-item"><i class="fa-solid fa-folder-open"></i><span>文件管理</span></a>
+            <a href="/settings" class="nav-item active"><i class="fa-solid fa-gear"></i><span>设置</span></a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-info"><div class="user-avatar-sm" id="sidebar-avatar"><i class="fa-solid fa-user"></i></div><span class="user-name">DemoUser</span></div>
+            <button class="btn btn-ghost btn-sm" id="logout-btn"><i class="fa-solid fa-rotate-left"></i><span>重置</span></button>
+            <button class="sidebar-toggle" id="sidebar-toggle"><i class="fa-solid fa-bars"></i><span>收起侧边栏</span></button>
+        </div>
+    </aside>
+    <main class="main-content">
+        <header class="top-bar"><div class="top-bar-left"><button class="btn btn-icon mobile-sidebar-toggle" id="mobile-sidebar-toggle"><i class="fa-solid fa-bars"></i></button><h2 class="page-title">设置</h2></div><div class="top-bar-right"><button class="btn btn-icon theme-toggle-btn-inline" id="theme-toggle-inline"><i class="fa-solid fa-moon"></i></button></div></header>
+
+        <!-- Demo Banner -->
+        <div class="demo-banner" style="background-color: #fff3cd; border-bottom: 1px solid #ffc107; padding: 12px 20px; text-align: center; color: #856404; font-weight: 500;">
+            <i class="fa-solid fa-triangle-exclamation"></i> 演示模式下所有设置仅存储于本地 Cookie，清除 Cookie 后恢复默认 | <a href="https://snowdrive.lclty.cn" target="_blank" style="color: #856404; text-decoration: underline;">官方网站</a> | <a href="https://github.com/lclty/SnowDrive" target="_blank" style="color: #856404; text-decoration: underline;">GitHub</a>
+        </div>
+
+        <div class="settings-container">
+            <div class="settings-sections">
+                <!-- Profile -->
+                <section class="settings-section"><h3 class="section-title"><i class="fa-solid fa-user"></i> 个人资料</h3><div class="settings-card">
+                    <div class="setting-row"><div class="setting-label">用户名</div><div class="setting-value">DemoUser</div></div>
+                    <div class="setting-row"><div class="setting-label">说明</div><div class="setting-value" style="color:var(--text-muted);font-size:0.85rem;">演示模式，无需登录。清除 Cookie 后恢复初始状态。</div></div>
+                </div></section>
+                <!-- Site Settings (Cookie-based) -->
+                <section class="settings-section"><h3 class="section-title"><i class="fa-solid fa-globe"></i> 站点设置 <span style="font-size:0.75rem;color:var(--text-muted);font-weight:normal;">(Cookie 存储)</span></h3><div class="settings-card">
+                    <div class="setting-row"><div class="setting-label">站点标题</div><div class="setting-control"><input type="text" id="site-title-input" placeholder="SnowDrive" class="setting-input"></div></div>
+                    <div class="setting-row"><div class="setting-label">ICP 备案号</div><div class="setting-control"><label style="display:flex;align-items:center;gap:0.5rem;font-size:0.85rem;"><input type="checkbox" id="icp-enabled"> 启用</label><input type="text" id="icp-number" placeholder="例：京ICP备12345678号" class="setting-input" style="margin-left:0.5rem;"></div></div>
+                    <div style="margin-top:1rem;"><button class="btn btn-primary btn-sm" id="save-site-settings"><i class="fa-solid fa-floppy-disk"></i> 保存设置到 Cookie</button></div>
+                </div></section>
+                <!-- Directory Status -->
+                <section class="settings-section"><h3 class="section-title"><i class="fa-solid fa-hard-drive"></i> 虚拟文件系统状态</h3><div class="settings-card" id="dirstat-card"><div class="loading-placeholder"><i class="fa-solid fa-spinner fa-spin"></i> 加载中...</div></div></section>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+{% endblock %}
