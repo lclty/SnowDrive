@@ -4,14 +4,17 @@
 
 **安全远程文件访问系统** —— 基于 Python/Flask 的轻量级 NAS 方案，Docker 一键部署。
 
-<p align="center">
+
   <img src="https://img.shields.io/badge/python-3.12+-blue.svg" alt="Python">
   <img src="https://img.shields.io/badge/flask-3.1-green.svg" alt="Flask">
   <img src="https://img.shields.io/badge/license-MIT-orange.svg" alt="License">
   <img src="https://img.shields.io/badge/docker-supported-brightgreen.svg" alt="Docker">
-</p>
 
----
+
+## 🌐 在线体验
+
+- 🏠 项目主页：[snowdrive.lclty.cn](https://snowdrive.lclty.cn)
+- 🎮 在线演示：[demo.snowdrive.lclty.cn](https://demo.snowdrive.lclty.cn)
 
 ## ✨ 功能特性
 
@@ -27,7 +30,6 @@
 - 💾 **持久化存储** —— 数据库与头像文件存储在容器外 Volume，升级/重建容器不丢数据
 
 ![界面展示](image.png)
----
 
 ## 🚀 快速开始
 
@@ -59,8 +61,6 @@ docker run -d \
   -e SNOWDRIVE_SECRET_KEY=your-random-secret-string \
   snowdrive:latest
  ```
-
----
 
 ## 🔨 本地构建
 
@@ -106,7 +106,6 @@ docker run -d \
   snowdrive
 ```
 
----
 
 ## 🌐 如何访问
 
@@ -175,7 +174,6 @@ server {
 
 修改配置文件后，请重启你的 NGINX 或重载运行 NGINX 的 Docker 容器。
 
----
 
 ## 📋 2FA 重置
 
@@ -187,7 +185,6 @@ docker exec -it snowdrive reset-2fa <username> <password>
 
 验证密码后，该用户的 2FA 将被清除，下次登录时会强制重新设置。
 
----
 
 ## 🔧 环境变量
 
@@ -199,7 +196,6 @@ docker exec -it snowdrive reset-2fa <username> <password>
 | `HTTP_PROXY` | 容器内 HTTP 代理（远程下载功能出境用） | — |
 | `HTTPS_PROXY` | 容器内 HTTPS 代理（远程下载功能出境用） | — |
 
----
 
 ## 🛡️ 安全说明
 
@@ -210,7 +206,6 @@ docker exec -it snowdrive reset-2fa <username> <password>
 - 所有文件操作均有 **路径遍历防护**（`safe_join_path` 限制在 `/data` 目录内）
 - 敏感操作（修改密码、删除 2FA 方式）均需二次验证当前密码
 
----
 
 ## 🏗️ 技术栈
 
@@ -224,7 +219,6 @@ docker exec -it snowdrive reset-2fa <username> <password>
 | 图标 | FontAwesome 6（本地离线） |
 | 容器化 | Docker + Docker Compose |
 
----
 
 ## 📁 项目结构
 
@@ -247,7 +241,6 @@ SnowDrive/
 └── README.md
 ```
 
----
 
 
 ## ⭐ Star History

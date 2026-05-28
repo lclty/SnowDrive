@@ -4,14 +4,15 @@
 
 **Secure Remote File Access System** —— A lightweight NAS solution based on Python/Flask, deployable with a single Docker command.
 
-<p align="center">
   <img src="https://img.shields.io/badge/python-3.12+-blue.svg" alt="Python">
   <img src="https://img.shields.io/badge/flask-3.1-green.svg" alt="Flask">
   <img src="https://img.shields.io/badge/license-MIT-orange.svg" alt="License">
   <img src="https://img.shields.io/badge/docker-supported-brightgreen.svg" alt="Docker">
-</p>
 
----
+## 🌐 Online Experience
+
+- 🏠 Homepage: [snowdrive.lclty.cn](https://snowdrive.lclty.cn)
+- 🎮 Live Demo: [demo.snowdrive.lclty.cn](https://demo.snowdrive.lclty.cn)
 
 ## ✨ Features
 
@@ -27,7 +28,6 @@
 - 💾 **Persistent Storage** —— Database and avatar files are stored on external Volumes; no data loss on container upgrades or rebuilds
 
 ![Screenshot](image.png)
----
 
 ## 🚀 Quick Start
 
@@ -60,7 +60,6 @@ docker run -d \
   snowdrive:latest
 ```
 
----
 
 ## 🔨 Local Build
 
@@ -107,7 +106,6 @@ docker run -d \
   snowdrive
 ```
 
----
 
 ## 🌐 How to Access
 
@@ -175,7 +173,6 @@ server {
 
 After modifying the configuration file, restart your NGINX or reload the Docker container running NGINX.
 
----
 
 ## 📋 2FA Reset
 
@@ -187,7 +184,6 @@ docker exec -it snowdrive reset-2fa <username> <password>
 
 After verifying the password, the user's 2FA will be cleared and will be forced to set it up again on the next login.
 
----
 
 ## 🔧 Environment Variables
 
@@ -199,7 +195,6 @@ After verifying the password, the user's 2FA will be cleared and will be forced 
 | `HTTP_PROXY` | HTTP proxy inside the container (used for remote download outbound requests) | — |
 | `HTTPS_PROXY` | HTTPS proxy inside the container (used for remote download outbound requests) | — |
 
----
 
 ## 🛡️ Security Notes
 
@@ -210,7 +205,6 @@ After verifying the password, the user's 2FA will be cleared and will be forced 
 - All file operations have **path traversal protection** (`safe_join_path` restricts operations within the `/data` directory)
 - Sensitive operations (changing password, deleting 2FA methods) require re-verification of the current password
 
----
 
 ## 🏗️ Tech Stack
 
@@ -224,7 +218,6 @@ After verifying the password, the user's 2FA will be cleared and will be forced 
 | Icons | FontAwesome 6 (local offline) |
 | Containerization | Docker + Docker Compose |
 
----
 
 ## 📁 Project Structure
 
@@ -247,7 +240,6 @@ SnowDrive/
 └── README.md
 ```
 
----
 
 
 ## ⭐ Star History
