@@ -151,7 +151,7 @@ def create_file():
         return jsonify({"error": str(e)}), 500
 
 
-# ─── Delete / Rename / Move ───────────────────────────────────────
+# ─── Delete / Rename / Copy / Move ────────────────────────────────
 
 @files_bp.route("/api/files/delete", methods=["POST"])
 @login_required
@@ -188,6 +188,89 @@ def rename_item():
         return jsonify({"success": True})
     except OSError as e:
         return jsonify({"error": str(e)}), 500
+
+
+@files_bp.route("/api/files/copy", methods=["POST"])
+@login_required
+def copy_item():
+    """Copy one or more files/folders to a destination path."""
+    data = request.get_json() or {}
+    paths = data.get("paths", [])
+    dest_path = (data.get("dest_path") or "").strip()
+    if not paths or not dest_path:
+        return jsonify({"error": "Paths and destination required."}), 400
+    dest_full = safe_join_path(Config.DATA_DIR, dest_path)
+    if dest_full is None:
+        return jsonify({"error": "Invalid destination path."}), 400
+    if not os.path.exists(dest_full):
+        return jsonify({"error": "Destination directory not found."}), 404
+    if not os.path.isdir(dest_full):
+        return jsonify({"error": "Destination is not a directory."}), 400
+
+    results = {"success": [], "failed": []}
+    for subpath in paths:
+        full_path = safe_join_path(Config.DATA_DIR, subpath.strip())
+        if full_path is None or not os.path.exists(full_path):
+            results["failed"].append({"path": subpath, "error": "Not found."})
+            continue
+        base_name = os.path.basename(full_path)
+        dest_file = os.path.join(dest_full, base_name)
+        # Handle name conflict
+        if os.path.exists(dest_file):
+            name, ext = os.path.splitext(base_name)
+            counter = 1
+            while os.path.exists(os.path.join(dest_full, f"{name} ({counter}){ext}")):
+                counter += 1
+            dest_file = os.path.join(dest_full, f"{name} ({counter}){ext}")
+        try:
+            if os.path.isdir(full_path):
+                shutil.copytree(full_path, dest_file)
+            else:
+                shutil.copy2(full_path, dest_file)
+            results["success"].append(subpath)
+        except OSError as e:
+            results["failed"].append({"path": subpath, "error": str(e)})
+    return jsonify({"success": len(results["failed"]) == 0, "results": results})
+
+
+@files_bp.route("/api/files/move", methods=["POST"])
+@login_required
+def move_item():
+    """Move one or more files/folders to a destination path."""
+    data = request.get_json() or {}
+    paths = data.get("paths", [])
+    dest_path = (data.get("dest_path") or "").strip()
+    if not paths or not dest_path:
+        return jsonify({"error": "Paths and destination required."}), 400
+    dest_full = safe_join_path(Config.DATA_DIR, dest_path)
+    if dest_full is None:
+        return jsonify({"error": "Invalid destination path."}), 400
+    if not os.path.exists(dest_full):
+        return jsonify({"error": "Destination directory not found."}), 404
+    if not os.path.isdir(dest_full):
+        return jsonify({"error": "Destination is not a directory."}), 400
+
+    results = {"success": [], "failed": []}
+    for subpath in paths:
+        full_path = safe_join_path(Config.DATA_DIR, subpath.strip())
+        if full_path is None or not os.path.exists(full_path):
+            results["failed"].append({"path": subpath, "error": "Not found."})
+            continue
+        base_name = os.path.basename(full_path)
+        dest_file = os.path.join(dest_full, base_name)
+        # Handle name conflict
+        if os.path.exists(dest_file):
+            name, ext = os.path.splitext(base_name)
+            counter = 1
+            while os.path.exists(os.path.join(dest_full, f"{name} ({counter}){ext}")):
+                counter += 1
+            dest_file = os.path.join(dest_full, f"{name} ({counter}){ext}")
+        try:
+            shutil.move(full_path, dest_file)
+            results["success"].append(subpath)
+        except OSError as e:
+            results["failed"].append({"path": subpath, "error": str(e)})
+    return jsonify({"success": len(results["failed"]) == 0, "results": results})
 
 
 # ─── Download (GET single / POST zip) ──────────────────────────────

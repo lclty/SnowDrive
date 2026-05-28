@@ -49,6 +49,12 @@
             updateDeleteMessage();
             openModal('modal-delete');
         });
+        document.getElementById('btn-copy-selected').addEventListener('click', () => {
+            openCopyMoveModal('copy');
+        });
+        document.getElementById('btn-move-selected').addEventListener('click', () => {
+            openCopyMoveModal('move');
+        });
 
         // Confirm buttons
         document.getElementById('confirm-new-folder').addEventListener('click', createFolder);
@@ -56,6 +62,8 @@
         document.getElementById('confirm-rename').addEventListener('click', confirmRename);
         document.getElementById('confirm-delete').addEventListener('click', confirmDelete);
         document.getElementById('confirm-remote-download').addEventListener('click', remoteDownload);
+        document.getElementById('confirm-copy-move').addEventListener('click', confirmCopyMove);
+        document.getElementById('btn-copy-move-browse').addEventListener('click', refreshCopyMoveFileList);
 
         // Select toggle button (toolbar) — toggles between select all and deselect all
         const selectToggleBtn = document.getElementById('btn-select-toggle');
@@ -70,6 +78,7 @@
         document.getElementById('new-file-name').addEventListener('keydown', e => { if (e.key === 'Enter') createFile(); });
         document.getElementById('rename-input').addEventListener('keydown', e => { if (e.key === 'Enter') confirmRename(); });
         document.getElementById('remote-url').addEventListener('keydown', e => { if (e.key === 'Enter') remoteDownload(); });
+        document.getElementById('copy-move-dest').addEventListener('keydown', e => { if (e.key === 'Enter') confirmCopyMove(); });
 
         // File input
         fileInput.addEventListener('change', handleFileUpload);
@@ -340,6 +349,34 @@
         });
         actions.appendChild(renameBtn);
 
+        // Copy button
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'btn-icon';
+        copyBtn.title = '复制';
+        copyBtn.innerHTML = '<i class="fa-solid fa-copy"></i>';
+        copyBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selectedFiles.clear();
+            selectedFiles.add(file.path);
+            updateSelectionUI();
+            openCopyMoveModal('copy');
+        });
+        actions.appendChild(copyBtn);
+
+        // Move button
+        const moveBtn = document.createElement('button');
+        moveBtn.className = 'btn-icon';
+        moveBtn.title = '移动';
+        moveBtn.innerHTML = '<i class="fa-solid fa-right-left"></i>';
+        moveBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selectedFiles.clear();
+            selectedFiles.add(file.path);
+            updateSelectionUI();
+            openCopyMoveModal('move');
+        });
+        actions.appendChild(moveBtn);
+
         // Delete button
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'btn-icon';
@@ -590,17 +627,23 @@
         const dlBtn = document.getElementById('btn-download-selected');
         const zipBtn = document.getElementById('btn-zip-selected');
         const delBtn = document.getElementById('btn-delete-selected');
+        const copyBtn = document.getElementById('btn-copy-selected');
+        const moveBtn = document.getElementById('btn-move-selected');
 
         if (count > 0) {
             if (selInfo) { selInfo.style.display = 'inline'; selInfo.textContent = '已选择 ' + count + ' 项'; }
             if (dlBtn) dlBtn.disabled = false;
             if (zipBtn) zipBtn.disabled = false;
             if (delBtn) delBtn.disabled = false;
+            if (copyBtn) copyBtn.disabled = false;
+            if (moveBtn) moveBtn.disabled = false;
         } else {
             if (selInfo) selInfo.style.display = 'none';
             if (dlBtn) dlBtn.disabled = true;
             if (zipBtn) zipBtn.disabled = true;
             if (delBtn) delBtn.disabled = true;
+            if (copyBtn) copyBtn.disabled = true;
+            if (moveBtn) moveBtn.disabled = true;
         }
         // update select-toggle button label
         updateSelectToggleBtn();
@@ -826,6 +869,163 @@
             showToast(`删除完成：${successCount} 成功，${failCount} 失败。`, 'error');
         }
         loadFiles();
+    }
+
+    // ─── Copy / Move ────────────────────────────────────────────────
+    let _copyMoveMode = 'copy'; // 'copy' or 'move'
+    let _cmBrowsePath = '';
+
+    function openCopyMoveModal(mode) {
+        if (selectedFiles.size === 0) return;
+        _copyMoveMode = mode;
+        _cmBrowsePath = currentPath;
+
+        const titleEl = document.getElementById('copy-move-title');
+        const labelEl = document.getElementById('copy-move-label');
+        const confirmBtn = document.getElementById('confirm-copy-move');
+        const summaryEl = document.getElementById('copy-move-summary');
+
+        if (mode === 'copy') {
+            titleEl.innerHTML = '<i class="fa-solid fa-copy"></i> 复制到...';
+            labelEl.textContent = '目标文件夹';
+            confirmBtn.innerHTML = '<i class="fa-solid fa-copy"></i> 复制';
+        } else {
+            titleEl.innerHTML = '<i class="fa-solid fa-right-left"></i> 移动到...';
+            labelEl.textContent = '目标文件夹';
+            confirmBtn.innerHTML = '<i class="fa-solid fa-right-left"></i> 移动';
+        }
+
+        const names = [...selectedFiles].map(p => p.split('/').pop());
+        summaryEl.textContent = `已选择 ${selectedFiles.size} 项：${names.join('、')}`;
+
+        document.getElementById('copy-move-dest').value = _cmBrowsePath || '/';
+        refreshCopyMoveBreadcrumbs();
+        refreshCopyMoveFileList();
+        openModal('modal-copy-move');
+    }
+
+    function refreshCopyMoveBreadcrumbs() {
+        const container = document.getElementById('copy-move-breadcrumbs');
+        container.innerHTML = '';
+        const parts = _cmBrowsePath ? _cmBrowsePath.replace(/\\/g, '/').split('/').filter(Boolean) : [];
+        // Root
+        const rootSpan = document.createElement('span');
+        rootSpan.className = 'breadcrumb-item' + (parts.length === 0 ? ' active' : '');
+        rootSpan.textContent = '根目录';
+        rootSpan.dataset.path = '';
+        rootSpan.addEventListener('click', function(e) {
+            e.stopPropagation();
+            _cmBrowsePath = '';
+            document.getElementById('copy-move-dest').value = '/';
+            refreshCopyMoveBreadcrumbs();
+            refreshCopyMoveFileList();
+        });
+        container.appendChild(rootSpan);
+
+        let accumulated = '';
+        parts.forEach((part, i) => {
+            const sep = document.createElement('span');
+            sep.className = 'breadcrumb-sep';
+            sep.textContent = '/';
+            container.appendChild(sep);
+            accumulated = accumulated ? accumulated + '/' + part : part;
+            const span = document.createElement('span');
+            span.className = 'breadcrumb-item' + (i === parts.length - 1 ? ' active' : '');
+            span.textContent = part;
+            span.dataset.path = accumulated;
+            span.addEventListener('click', function(e) {
+                e.stopPropagation();
+                _cmBrowsePath = accumulated;
+                document.getElementById('copy-move-dest').value = '/' + accumulated;
+                refreshCopyMoveBreadcrumbs();
+                refreshCopyMoveFileList();
+            });
+            container.appendChild(span);
+        });
+    }
+
+    async function refreshCopyMoveFileList() {
+        const listEl = document.getElementById('copy-move-file-list');
+        listEl.innerHTML = '<div class="loading-container" style="display:flex;padding:1rem;"><i class="fa-solid fa-spinner fa-spin"></i><p>加载中...</p></div>';
+
+        try {
+            const resp = await apiGet('/api/files/list?path=' + encodeURIComponent(_cmBrowsePath) + '&sort=name&order=asc');
+            const data = await resp.json();
+            if (!resp.ok) {
+                listEl.innerHTML = '<p class="text-muted" style="text-align:center;padding:1rem;">加载失败</p>';
+                return;
+            }
+            listEl.innerHTML = '';
+            const folders = data.files.filter(f => f.is_dir);
+            if (folders.length === 0) {
+                listEl.innerHTML = '<p class="text-muted" style="text-align:center;padding:1rem;">此文件夹中没有子文件夹</p>';
+                return;
+            }
+            folders.forEach(f => {
+                const item = document.createElement('div');
+                item.className = 'cm-folder-item';
+                item.innerHTML = '<i class="fa-solid fa-folder"></i><span>' + escapeHtml(f.name) + '</span>';
+                item.addEventListener('click', () => {
+                    _cmBrowsePath = f.path;
+                    document.getElementById('copy-move-dest').value = '/' + f.path;
+                    refreshCopyMoveBreadcrumbs();
+                    refreshCopyMoveFileList();
+                });
+                listEl.appendChild(item);
+            });
+        } catch (e) {
+            listEl.innerHTML = '<p class="text-muted" style="text-align:center;padding:1rem;">加载失败</p>';
+        }
+    }
+
+    async function confirmCopyMove() {
+        if (selectedFiles.size === 0) return;
+        const destPath = _cmBrowsePath;
+        if (!destPath && destPath !== '') {
+            showToast('请选择目标文件夹。', 'error');
+            return;
+        }
+        // Prevent copying/moving to the same directory
+        const paths = [...selectedFiles];
+        const allInSameDir = paths.every(p => {
+            const parent = p.includes('/') ? p.substring(0, p.lastIndexOf('/')) : '';
+            return parent === destPath;
+        });
+        if (allInSameDir && paths.length > 0) {
+            showToast('目标文件夹与源文件夹相同，请选择其他文件夹。', 'error');
+            return;
+        }
+
+        const btn = document.getElementById('confirm-copy-move');
+        setLoading(btn, true);
+        try {
+            const endpoint = _copyMoveMode === 'copy' ? '/api/files/copy' : '/api/files/move';
+            const resp = await apiPost(endpoint, { paths, dest_path: destPath });
+            const data = await resp.json();
+            setLoading(btn, false);
+            closeModal('modal-copy-move');
+
+            if (resp.ok && data.results) {
+                const s = data.results.success.length;
+                const f = data.results.failed.length;
+                const modeLabel = _copyMoveMode === 'copy' ? '复制' : '移动';
+                if (f === 0) {
+                    showToast(`${modeLabel}完成：${s} 项成功。`, 'success');
+                } else {
+                    showToast(`${modeLabel}完成：${s} 成功，${f} 失败。`, f > 0 ? 'error' : 'success');
+                }
+                if (_copyMoveMode === 'move') {
+                    selectedFiles.clear();
+                    updateSelectionUI();
+                }
+                loadFiles();
+            } else {
+                showToast(data.error || '操作失败。', 'error');
+            }
+        } catch (e) {
+            setLoading(btn, false);
+            showToast('操作失败：' + (e.message || '未知错误'), 'error');
+        }
     }
 
     // ─── Upload ────────────────────────────────────────────────────

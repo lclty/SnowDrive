@@ -43,6 +43,8 @@
                 <button class="btn btn-secondary btn-sm" id="btn-upload"><i class="fa-solid fa-upload"></i> 上传</button>
                 <button class="btn btn-secondary btn-sm" id="btn-download-selected" disabled><i class="fa-solid fa-download"></i> 下载</button>
                 <button class="btn btn-secondary btn-sm" id="btn-remote-download"><i class="fa-solid fa-cloud-arrow-down"></i> 远程下载</button>
+                <button class="btn btn-secondary btn-sm" id="btn-copy-selected" disabled><i class="fa-solid fa-copy"></i> 复制</button>
+                <button class="btn btn-secondary btn-sm" id="btn-move-selected" disabled><i class="fa-solid fa-right-left"></i> 移动</button>
                 <button class="btn btn-danger btn-sm" id="btn-delete-selected" disabled><i class="fa-solid fa-trash"></i> 删除</button>
             </div>
             <div class="toolbar-right">
@@ -106,6 +108,22 @@
 <div class="modal" id="modal-rename"><div class="modal-content modal-sm"><div class="modal-header"><h3><i class="fa-solid fa-pen-to-square"></i> 重命名</h3><button class="modal-close">&times;</button></div><div class="modal-body"><div class="form-group"><label>新名称</label><input type="text" id="rename-input" autofocus></div></div><div class="modal-footer"><button class="btn btn-secondary modal-cancel">取消</button><button class="btn btn-primary" id="confirm-rename">确认</button></div></div></div>
 <div class="modal" id="modal-remote-download"><div class="modal-content modal-md"><div class="modal-header"><h3><i class="fa-solid fa-cloud-arrow-down"></i> 远程下载</h3><button class="modal-close">&times;</button></div><div class="modal-body"><div class="form-group"><label>文件 URL</label><input type="url" id="remote-url" placeholder="https://..." autofocus></div><div class="form-group"><label>保存文件名（可选）</label><input type="text" id="remote-filename" placeholder="留空自动识别"></div></div><div class="modal-footer"><button class="btn btn-secondary modal-cancel">取消</button><button class="btn btn-primary" id="confirm-remote-download">开始下载</button></div></div></div>
 <div class="modal" id="modal-delete"><div class="modal-content modal-sm"><div class="modal-header"><h3><i class="fa-solid fa-triangle-exclamation"></i> 确认删除</h3><button class="modal-close">&times;</button></div><div class="modal-body"><p id="delete-message"></p></div><div class="modal-footer"><button class="btn btn-secondary modal-cancel">取消</button><button class="btn btn-danger" id="confirm-delete">删除</button></div></div></div>
+<div class="modal" id="modal-copy-move"><div class="modal-content modal-sm"><div class="modal-header"><h3 id="copy-move-title"><i class="fa-solid fa-copy"></i> 选择目标位置</h3><button class="modal-close">&times;</button></div><div class="modal-body">
+    <div class="form-group">
+        <label id="copy-move-label">目标文件夹</label>
+        <div class="path-selector">
+            <input type="text" id="copy-move-dest" placeholder="/" autofocus>
+            <button class="btn btn-sm btn-secondary" id="btn-copy-move-browse" title="浏览..."><i class="fa-solid fa-folder-open"></i></button>
+        </div>
+        <div class="breadcrumbs breadcrumbs-sm" id="copy-move-breadcrumbs">
+            <span class="breadcrumb-item active" data-path="">根目录</span>
+        </div>
+        <div class="copy-move-file-list" id="copy-move-file-list">
+            <p class="text-muted" style="text-align:center;padding:1rem;">选择一个目标文件夹</p>
+        </div>
+    </div>
+    <p id="copy-move-summary" class="text-muted" style="margin-top:0.5rem;"></p>
+</div><div class="modal-footer"><button class="btn btn-secondary modal-cancel">取消</button><button class="btn btn-primary" id="confirm-copy-move">确认</button></div></div></div>
 
 <input type="file" id="file-input" multiple hidden>
 <input type="file" id="folder-input" webkitdirectory multiple hidden>
