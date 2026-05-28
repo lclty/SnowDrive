@@ -18,7 +18,7 @@
 - 🔐 **Secure Authentication** —— Username + Password + Mandatory Two-Factor Authentication (2FA)
   - TOTP dynamic verification codes (compatible with Microsoft Authenticator, Google Authenticator, etc.)
   - WebAuthn/Passkey support (fingerprint, facial recognition, Windows Hello, YubiKey, etc.)
-- 📁 **Full File Management** —— Browse, upload, download, create files/folders, rename, delete
+- 📁 **Full File Management** —— Browse, upload, download, create files/folders, copy, move, rename, delete
 - 🌐 **Remote Download** —— Download remote files to the server by pasting a URL; background tasks track progress in real time
 - 📦 **Batch Operations** —— Multi-select files for batch download (automatic ZIP packaging), drag-and-drop upload
 - 🎨 **Elegant UI** —— Responsive design, light/dark theme switching, mobile-friendly
