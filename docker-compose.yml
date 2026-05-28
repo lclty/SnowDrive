@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  snowdrive:
+    build:
+      context: .
+      args:
+        # Set proxy for Docker Hub access in restricted regions
+        # Uncomment and set if needed:
+        # HTTP_PROXY: http://127.0.0.1:10808
+        # HTTPS_PROXY: http://127.0.0.1:10808
+    container_name: snowdrive
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      # Mount your local directory to /data (change the left side to your actual path)
+      - ./data:/data
+      # Persistent user data storage
+      - ./userdata:/userdata
+    environment:
+      - TZ=Asia/Shanghai
+      # Set a custom secret key for JWT signing (change in production!)
+      - SNOWDRIVE_SECRET_KEY=change-me-to-a-random-secret-string
+      # Session lifetime in days
+      - SNOWDRIVE_SESSION_DAYS=7
+    # If you need proxy inside the container for outbound requests (e.g., remote download):
+    # environment:
+    #   - HTTP_PROXY=http://host.docker.internal:10808
+    #   - HTTPS_PROXY=http://host.docker.internal:10808
+    #   - NO_PROXY=localhost,127.0.0.1

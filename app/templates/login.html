@@ -1,0 +1,183 @@
+﻿{% extends "base.html" %}
+{% block title %}登录 - SnowDrive{% endblock %}
+{% block body %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-logo"><i class="fa-solid fa-snowflake"></i></div>
+            <h1>SnowDrive</h1>
+            <p class="auth-subtitle">安全远程文件访问</p>
+        </div>
+        <form id="login-form" class="auth-form">
+            <!-- Step 1: Username + Password -->
+            <div id="step1">
+                <div class="form-group"><label for="username"><i class="fa-solid fa-user"></i> 用户名</label><input type="text" id="username" placeholder="用户名" autocomplete="username" required autofocus></div>
+                <div class="form-group"><label for="password"><i class="fa-solid fa-lock"></i> 密码</label><div class="password-input-wrapper"><input type="password" id="password" placeholder="密码" autocomplete="current-password" required><button type="button" class="toggle-password" tabindex="-1"><i class="fa-solid fa-eye"></i></button></div></div>
+                <button type="submit" class="btn btn-primary btn-full" id="login-btn"><i class="fa-solid fa-right-to-bracket"></i> 登录</button>
+            </div>
+            <!-- Step 2: 2FA Verification -->
+            <div id="step2" style="display:none;">
+                <div class="step-indicator"><i class="fa-solid fa-shield-halved"></i> 双因素认证</div>
+                <div id="2fa-methods-container">
+                    <div class="method-tabs" id="method-tabs"></div>
+                    <div id="method-panels"></div>
+                </div>
+                <button type="button" class="btn btn-ghost btn-sm" id="back-to-login" style="margin-top:0.5rem;"><i class="fa-solid fa-arrow-left"></i> 返回</button>
+            </div>
+        </form>
+        <div class="auth-footer"><p id="error-message" class="error-message" style="display:none;"></p></div>
+    </div>
+    <button class="theme-toggle-btn" id="theme-toggle"><i class="fa-solid fa-moon"></i></button>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function() {
+    var errorEl = document.getElementById('error-message');
+    var step1 = document.getElementById('step1');
+    var step2 = document.getElementById('step2');
+    var methods = [];
+    var currentUsername = '';
+
+    function showError(msg) { errorEl.textContent = msg; errorEl.style.display = 'block'; setTimeout(function() { errorEl.style.display = 'none'; }, 5000); }
+    function setLoading(b, l) {
+        if (l) { b.disabled = true; b.dataset.orig = b.innerHTML; b.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ...'; }
+        else { b.disabled = false; if (b.dataset.orig) b.innerHTML = b.dataset.orig; }
+    }
+    function arrayBufferToBase64url(buf) { var bytes = new Uint8Array(buf), bin = ''; for (var i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]); return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+
+    // Theme handled centrally in app.js
+
+    // Password toggle
+    document.querySelector('.toggle-password').addEventListener('click', function() {
+        var inp = document.getElementById('password');
+        var icon = this.querySelector('i');
+        if (inp.type === 'password') { inp.type = 'text'; icon.className = 'fa-solid fa-eye-slash'; }
+        else { inp.type = 'password'; icon.className = 'fa-solid fa-eye'; }
+    });
+
+    // Step 1: Login
+    document.getElementById('login-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        if (step1.style.display === 'none') return; // Don't submit from step 2
+        var username = document.getElementById('username').value.trim();
+        var password = document.getElementById('password').value;
+        if (!username || !password) { showError('请输入用户名和密码。'); return; }
+        setLoading(document.getElementById('login-btn'), true);
+        try {
+            var resp = await fetch('/api/auth/login', { method: 'POST', headers: {'Content-Type': 'application/json'}, credentials: 'same-origin', body: JSON.stringify({username: username, password: password}) });
+            var data = await resp.json();
+            if (data.require_2fa_reset) { window.location.href = '/reset-2fa'; return; }
+            if (data.require_2fa) {
+                currentUsername = username;
+                methods = data.methods;
+                step1.style.display = 'none';
+                step2.style.display = 'block';
+                render2FAMethods(data.methods);
+            } else if (data.success) { window.location.href = '/files'; }
+            else { showError(data.error || 'Login failed.'); }
+        } catch (err) { showError('Network error.'); }
+        finally { setLoading(document.getElementById('login-btn'), false); }
+    });
+
+    // Back button
+    document.getElementById('back-to-login').addEventListener('click', function() {
+        step2.style.display = 'none';
+        step1.style.display = 'block';
+    });
+
+    function render2FAMethods(methods) {
+        var tabs = document.getElementById('method-tabs');
+        var panels = document.getElementById('method-panels');
+        tabs.innerHTML = ''; panels.innerHTML = '';
+
+        methods.forEach(function(m, i) {
+            var icon = m.type === 'totp' ? 'fa-mobile-screen-button' : 'fa-fingerprint';
+            var label = m.type === 'totp' ? '验证器' : 'Passkey';
+            var tab = document.createElement('button');
+            tab.type = 'button';
+            tab.className = 'method-tab' + (i === 0 ? ' active' : '');
+            tab.innerHTML = '<i class="fa-solid ' + icon + '"></i> ' + label;
+            tab.dataset.index = i;
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.method-tab').forEach(function(t) { t.classList.remove('active'); });
+                this.classList.add('active');
+                document.querySelectorAll('.method-panel').forEach(function(p) { p.style.display = 'none'; });
+                document.getElementById('panel-' + this.dataset.index).style.display = 'block';
+            });
+            tabs.appendChild(tab);
+
+            var panel = document.createElement('div');
+            panel.className = 'method-panel';
+            panel.id = 'panel-' + i;
+            panel.style.display = i === 0 ? 'block' : 'none';
+
+            if (m.type === 'totp') {
+                panel.innerHTML = '<p class="step-description">输入身份验证器中的 6 位验证码</p><div class="form-group"><input type="text" class="totp-input" placeholder="000000" inputmode="numeric" maxlength="6"></div><button class="btn btn-primary btn-full submit-2fa" data-method-id="' + m.id + '" data-method-type="totp"><i class="fa-solid fa-check"></i> 验证</button>';
+            } else if (m.type === 'webauthn') {
+                panel.innerHTML = '<p class="step-description">使用您的设备进行验证</p><button class="btn btn-primary btn-full submit-2fa" data-method-id="' + m.id + '" data-method-type="webauthn"><i class="fa-solid fa-fingerprint"></i> 使用 Passkey 验证</button>';
+            }
+            panels.appendChild(panel);
+        });
+
+        // Hook up submit buttons
+        document.querySelectorAll('.submit-2fa').forEach(function(btn) {
+            btn.addEventListener('click', async function() {
+                var type = this.dataset.methodType;
+                var methodId = this.dataset.methodId;
+                setLoading(this, true);
+
+                if (type === 'totp') {
+                    var code = this.parentElement.querySelector('.totp-input').value.trim();
+                    if (code.length !== 6) { showError('请输入 6 位验证码。'); setLoading(this, false); return; }
+                    var resp = await fetch('/api/auth/login-2fa', { method: 'POST', headers: {'Content-Type': 'application/json'}, credentials: 'same-origin', body: JSON.stringify({method_type: 'totp', method_id: parseInt(methodId), code: code}) });
+                    var data = await resp.json();
+                    if (resp.ok && data.success) { window.location.href = '/files'; }
+                    else { showError(data.error || 'Verification failed.'); }
+                } else if (type === 'webauthn') {
+                    try {
+                        var authResp = await fetch('/api/auth/webauthn-auth-begin', { method: 'POST', credentials: 'same-origin' });
+                        var authData;
+                        try {
+                            var ct = authResp.headers.get('content-type') || '';
+                            if (ct.indexOf('application/json') !== -1) authData = await authResp.json();
+                            else authData = { error: await authResp.text() };
+                        } catch (e) { authData = { error: 'Failed to parse server response.' }; }
+                        if (!authResp.ok) { showError(authData.error || 'WebAuthn not available.'); setLoading(this, false); return; }
+                        var options = authData.options;
+                        options.challenge = Uint8Array.from(atob(options.challenge.replace(/-/g, '+').replace(/_/g, '/')), function(c) { return c.charCodeAt(0); });
+                        options.allowCredentials.forEach(function(c) { c.id = Uint8Array.from(atob(c.id.replace(/-/g, '+').replace(/_/g, '/')), function(ch) { return ch.charCodeAt(0); }); });
+                        var assertion = await navigator.credentials.get({ publicKey: options });
+                        var credData = {
+                            id: arrayBufferToBase64url(assertion.rawId),
+                            rawId: arrayBufferToBase64url(assertion.rawId),
+                            response: {
+                                authenticatorData: arrayBufferToBase64url(assertion.response.authenticatorData),
+                                clientDataJSON: arrayBufferToBase64url(assertion.response.clientDataJSON),
+                                signature: arrayBufferToBase64url(assertion.response.signature),
+                            },
+                            type: assertion.type
+                        };
+                        var verifyResp = await fetch('/api/auth/login-2fa', { method: 'POST', headers: {'Content-Type': 'application/json'}, credentials: 'same-origin', body: JSON.stringify({method_type: 'webauthn', credential: credData}) });
+                        var verifyData = await verifyResp.json();
+                        if (verifyResp.ok && verifyData.success) { window.location.href = '/files'; }
+                        else { showError(verifyData.error || 'WebAuthn failed.'); }
+                    } catch (err) { showError('WebAuthn error: ' + err.message); }
+                }
+                setLoading(this, false);
+            });
+        });
+
+        // Auto-focus first TOTP input
+        var firstTotp = document.querySelector('.totp-input');
+        if (firstTotp) setTimeout(function() { firstTotp.focus(); }, 200);
+
+        // TOTP input filtering
+        document.querySelectorAll('.totp-input').forEach(function(inp) {
+            inp.addEventListener('input', function() { this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6); });
+            inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') { this.parentElement.querySelector('.submit-2fa').click(); } });
+        });
+    }
+})();
+</script>
+{% endblock %}

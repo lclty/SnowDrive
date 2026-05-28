@@ -1,0 +1,101 @@
+﻿{% extends "base.html" %}
+{% block title %}注册 - SnowDrive{% endblock %}
+{% block body %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-logo"><i class="fa-solid fa-snowflake"></i></div>
+            <h1>欢迎使用 SnowDrive</h1>
+            <p class="auth-subtitle">创建管理员账户。2FA 为强制要求。</p>
+        </div>
+        <form id="register-form" class="auth-form">
+            <div class="form-group">
+                <label for="username"><i class="fa-solid fa-user"></i> 用户名</label>
+                <input type="text" id="username" placeholder="2-32 字符" autocomplete="username" required autofocus minlength="2" maxlength="32" pattern="[a-zA-Z0-9_\-]{2,32}">
+            </div>
+            <div class="form-group">
+                <label for="password"><i class="fa-solid fa-lock"></i> 密码</label>
+                <div class="password-input-wrapper">
+                    <input type="password" id="password" placeholder="至少 8 个字符" autocomplete="new-password" required minlength="8">
+                    <button type="button" class="toggle-password" tabindex="-1"><i class="fa-solid fa-eye"></i></button>
+                </div>
+                <div class="password-strength"><div class="strength-bar" id="strength-bar"></div></div>
+            </div>
+            <div class="form-group">
+                <label for="confirm-password"><i class="fa-solid fa-lock"></i> 确认密码</label>
+                <input type="password" id="confirm-password" placeholder="再次输入密码" autocomplete="new-password" required minlength="8">
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary btn-full" id="register-btn">
+                    <i class="fa-solid fa-user-plus"></i> 创建账户并设置 2FA
+                </button>
+            </div>
+        </form>
+        <div class="auth-footer"><p id="error-message" class="error-message" style="display:none;"></p></div>
+    </div>
+    <button class="theme-toggle-btn" id="theme-toggle" title="切换深浅色模式"><i class="fa-solid fa-moon"></i></button>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function() {
+    const form = document.getElementById('register-form');
+    const errorEl = document.getElementById('error-message');
+    const registerBtn = document.getElementById('register-btn');
+
+    function showError(msg) { errorEl.textContent = msg; errorEl.style.display = 'block'; setTimeout(() => errorEl.style.display = 'none', 5000); }
+    function setLoading(b, l) {
+        if (l) { b.disabled = true; b.dataset.orig = b.innerHTML; b.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ...'; }
+        else { b.disabled = false; if (b.dataset.orig) b.innerHTML = b.dataset.orig; }
+    }
+
+    // Theme handled centrally in app.js
+
+    // Password toggle
+    document.querySelectorAll('.toggle-password').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var input = this.parentElement.querySelector('input');
+            var icon = this.querySelector('i');
+            if (input.type === 'password') { input.type = 'text'; icon.className = 'fa-solid fa-eye-slash'; }
+            else { input.type = 'password'; icon.className = 'fa-solid fa-eye'; }
+        });
+    });
+
+    // Password strength
+    document.getElementById('password').addEventListener('input', function() {
+        var pw = this.value, strength = 0;
+        if (pw.length >= 8) strength++;
+        if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) strength++;
+        if (/[0-9]/.test(pw)) strength++;
+        if (/[^a-zA-Z0-9]/.test(pw)) strength++;
+        if (pw.length >= 12) strength++;
+        var bar = document.getElementById('strength-bar');
+        bar.className = 'strength-bar';
+        if (strength <= 1) bar.classList.add('weak');
+        else if (strength <= 3) bar.classList.add('medium');
+        else bar.classList.add('strong');
+        bar.style.width = (strength * 20) + '%';
+    });
+
+    // Form submit
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        var username = document.getElementById('username').value.trim();
+        var password = document.getElementById('password').value;
+        var confirmPw = document.getElementById('confirm-password').value;
+        if (!username || username.length < 2) { showError('Username too short.'); return; }
+        if (!/^[a-zA-Z0-9_\-]+$/.test(username)) { showError('Invalid username characters.'); return; }
+        if (password.length < 8) { showError('Password too short.'); return; }
+        if (password !== confirmPw) { showError('Passwords do not match.'); return; }
+        setLoading(registerBtn, true);
+        try {
+            var resp = await fetch('/api/auth/register', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({username: username, password: password}) });
+            var data = await resp.json();
+            if (resp.ok) { window.location.href = '/setup-2fa'; }
+            else { showError(data.error || 'Registration failed.'); }
+        } catch (err) { showError('Network error.'); }
+        finally { setLoading(registerBtn, false); }
+    });
+})();
+</script>
+{% endblock %}

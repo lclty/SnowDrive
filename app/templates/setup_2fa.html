@@ -1,0 +1,62 @@
+﻿{% extends "base.html" %}
+{% block title %}设置双因素认证 - SnowDrive{% endblock %}
+{% block body %}
+<div class="auth-container">
+    <div class="auth-card setup-2fa-card">
+        <div class="auth-header">
+            <div class="auth-logo"><i class="fa-solid fa-shield-halved"></i></div>
+            <h1>设置双因素认证 (2FA)</h1>
+            <p class="auth-subtitle">2FA 是强制要求。请选择一种方式完成设置。</p>
+        </div>
+        <div id="setup-container">
+            <!-- Method Selection -->
+            <div id="method-select">
+                <p class="step-description">选择您的双因素认证方式：</p>
+                <div class="method-options">
+                    <button class="method-option" data-method="totp">
+                        <i class="fa-solid fa-mobile-screen-button fa-2x"></i>
+                        <strong>身份验证器应用</strong>
+                        <small>Microsoft / Google Authenticator</small>
+                    </button>
+                    <button class="method-option" data-method="webauthn">
+                        <i class="fa-solid fa-fingerprint fa-2x"></i>
+                        <strong>Windows Hello / Passkey</strong>
+                        <small>指纹、面容或 PIN 码</small>
+                    </button>
+                </div>
+            </div>
+
+            <!-- TOTP Setup -->
+            <div id="totp-setup" style="display:none;">
+                <button class="btn btn-ghost btn-sm" id="back-to-methods"><i class="fa-solid fa-arrow-left"></i> 返回</button>
+                <div class="qr-container"><img id="totp-qr" src="" alt="QR" style="display:none;"><div id="totp-qr-placeholder" class="qr-placeholder"><i class="fa-solid fa-qrcode fa-3x"></i><p>点击生成二维码</p></div></div>
+                <div class="secret-display" id="totp-secret-display" style="display:none;"><label>密钥：</label><code id="totp-secret-text"></code><button class="btn btn-sm" id="copy-secret"><i class="fa-solid fa-copy"></i></button></div>
+                <button class="btn btn-primary btn-full" id="totp-generate-btn"><i class="fa-solid fa-qrcode"></i> 生成二维码</button>
+                <div id="totp-verify-area" style="display:none;">
+                    <div class="form-group"><label>验证码</label><input type="text" id="totp-code" placeholder="000000" inputmode="numeric" maxlength="6"></div>
+                    <button class="btn btn-primary btn-full" id="totp-verify-btn"><i class="fa-solid fa-check"></i> 验证并完成</button>
+                </div>
+            </div>
+
+            <!-- WebAuthn Setup -->
+            <div id="webauthn-setup" style="display:none;">
+                <button class="btn btn-ghost btn-sm" id="back-to-methods-wa"><i class="fa-solid fa-arrow-left"></i> 返回</button>
+                <p class="step-description">使用您的设备生物识别或 PIN 码进行注册。</p>
+                <button class="btn btn-primary btn-full" id="webauthn-register-btn"><i class="fa-solid fa-fingerprint"></i> 注册 Windows Hello / Passkey</button>
+                <p id="webauthn-status" style="text-align:center;margin-top:0.5rem;color:var(--text-muted);font-size:0.85rem;"></p>
+            </div>
+
+            <!-- Complete Setup -->
+            <div id="complete-area" style="display:none;">
+                <p class="step-description" style="text-align:center;">2FA 设置完成！</p>
+                <button class="btn btn-primary btn-full" id="finish-setup"><i class="fa-solid fa-check"></i> 进入 SnowDrive</button>
+            </div>
+        </div>
+        <div class="auth-footer"><p id="error-message" class="error-message" style="display:none;"></p></div>
+    </div>
+    <button class="theme-toggle-btn" id="theme-toggle"><i class="fa-solid fa-moon"></i></button>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/setup2fa.js') }}"></script>
+{% endblock %}

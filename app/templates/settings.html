@@ -1,0 +1,75 @@
+﻿{% extends "base.html" %}
+{% block title %}设置 - SnowDrive{% endblock %}
+{% block body %}
+<div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header"><div class="app-logo"><i class="fa-solid fa-snowflake"></i><span>SnowDrive</span></div><button class="sidebar-toggle" id="sidebar-toggle"><i class="fa-solid fa-bars"></i></button></div>
+        <nav class="sidebar-nav">
+            <a href="/files" class="nav-item"><i class="fa-solid fa-folder-open"></i><span>文件管理</span></a>
+            <a href="/settings" class="nav-item active"><i class="fa-solid fa-gear"></i><span>设置</span></a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-info"><div class="user-avatar-sm" id="sidebar-avatar"><img src="/api/settings/avatar" alt="Avatar" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><i class="fa-solid fa-user" style="display:none;"></i></div><span class="user-name">{{ username }}</span></div>
+            <button class="btn btn-ghost btn-sm" id="logout-btn"><i class="fa-solid fa-right-from-bracket"></i><span>退出</span></button>
+        </div>
+    </aside>
+    <main class="main-content">
+        <header class="top-bar"><div class="top-bar-left"><button class="btn btn-icon mobile-sidebar-toggle" id="mobile-sidebar-toggle"><i class="fa-solid fa-bars"></i></button><h2 class="page-title">设置</h2></div><div class="top-bar-right"><button class="btn btn-icon theme-toggle-btn-inline" id="theme-toggle-inline"><i class="fa-solid fa-moon"></i></button></div></header>
+        <div class="settings-container">
+            <div class="settings-sections">
+                <!-- Profile -->
+                <section class="settings-section"><h3 class="section-title"><i class="fa-solid fa-user"></i> 个人资料</h3><div class="settings-card">
+                    <div class="setting-row avatar-setting"><div class="setting-label">头像</div><div class="setting-control"><div class="avatar-preview-lg" id="settings-avatar-preview"><img src="/api/settings/avatar" id="settings-avatar-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><i class="fa-solid fa-user fa-2x" style="display:none;"></i></div><div class="avatar-actions"><label class="btn btn-secondary btn-sm"><i class="fa-solid fa-upload"></i> 上传<input type="file" id="settings-avatar-input" accept="image/png,image/jpeg,image/gif,image/webp" hidden></label><button class="btn btn-ghost btn-sm" id="remove-avatar-btn"><i class="fa-solid fa-trash"></i> 移除</button></div></div></div>
+                    <div class="setting-row"><div class="setting-label">用户名</div><div class="setting-value">{{ username }}</div></div>
+                </div></section>
+                <!-- Password -->
+                <section class="settings-section"><h3 class="section-title"><i class="fa-solid fa-lock"></i> 更改密码</h3><div class="settings-card">
+                    <form id="password-form">
+                        <div class="form-group"><label>当前密码</label><input type="password" id="current-password" required></div>
+                        <div class="form-group"><label>新密码</label><input type="password" id="new-password" required minlength="8"></div>
+                        <div class="form-group"><label>确认新密码</label><input type="password" id="confirm-new-password" required></div>
+                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-key"></i> 更改密码</button>
+                    </form>
+                </div></section>
+                <!-- 2FA Methods -->
+                <section class="settings-section"><h3 class="section-title"><i class="fa-solid fa-shield-halved"></i> 双因素认证</h3><div class="settings-card">
+                    <div id="2fa-methods-list"></div>
+                    <div class="setting-actions" style="margin-top:1rem;">
+                        <button class="btn btn-primary btn-sm" id="add-totp-btn"><i class="fa-solid fa-mobile-screen-button"></i> 添加验证器</button>
+                        <button class="btn btn-secondary btn-sm" id="add-webauthn-btn"><i class="fa-solid fa-fingerprint"></i> 添加 Passkey</button>
+                    </div>
+                    <!-- TOTP Add Panel -->
+                    <div id="add-totp-panel" style="display:none;margin-top:1rem;padding:1rem;background:var(--bg-primary);border-radius:var(--radius);">
+                        <h4>添加身份验证器</h4>
+                        <div class="qr-container"><img id="settings-totp-qr" src="" style="display:none;"><div id="settings-totp-placeholder" class="qr-placeholder" style="width:160px;height:160px;"><i class="fa-solid fa-qrcode fa-2x"></i><p>点击生成</p></div></div>
+                        <div class="secret-display" id="settings-totp-secret-display" style="display:none;"><label>密钥：</label><code id="settings-totp-secret"></code><button class="btn btn-sm" id="settings-copy-totp-secret"><i class="fa-solid fa-copy"></i></button></div>
+                        <button class="btn btn-primary btn-sm" id="settings-totp-generate"><i class="fa-solid fa-qrcode"></i> 生成</button>
+                        <div id="settings-totp-verify" style="display:none;margin-top:0.5rem;"><div class="inline-form"><input type="text" id="settings-totp-code" placeholder="000000" maxlength="6"><button class="btn btn-primary btn-sm" id="settings-totp-confirm">验证</button></div></div>
+                        <button class="btn btn-ghost btn-sm" id="cancel-add-totp" style="margin-top:0.5rem;">取消</button>
+                    </div>
+                    <!-- WebAuthn Add Panel -->
+                    <div id="add-webauthn-panel" style="display:none;margin-top:1rem;padding:1rem;background:var(--bg-primary);border-radius:var(--radius);">
+                        <h4>添加 Passkey</h4>
+                        <button class="btn btn-primary btn-sm" id="settings-webauthn-register"><i class="fa-solid fa-fingerprint"></i> 注册</button>
+                        <p id="settings-webauthn-status" style="font-size:0.85rem;color:var(--text-muted);margin-top:0.5rem;"></p>
+                        <button class="btn btn-ghost btn-sm" id="cancel-add-webauthn" style="margin-top:0.5rem;">取消</button>
+                    </div>
+                </div></section>
+                <!-- Directory Status -->
+                <section class="settings-section"><h3 class="section-title"><i class="fa-solid fa-hard-drive"></i> 目录状态</h3><div class="settings-card" id="dirstat-card"><div class="loading-placeholder"><i class="fa-solid fa-spinner fa-spin"></i> 加载中...</div></div></section>
+            </div>
+        </div>
+    </main>
+</div>
+<!-- Delete 2FA Modal -->
+<div class="modal" id="modal-delete-2fa"><div class="modal-content modal-sm"><div class="modal-header"><h3>删除 2FA 方式</h3><button class="modal-close">&times;</button></div><div class="modal-body">
+    <p>需要验证密码和另一个 2FA 方式。</p>
+    <input type="hidden" id="delete-method-id">
+    <div class="form-group"><label>密码</label><input type="password" id="delete-verify-password"></div>
+    <div class="form-group"><label>选择验证方式</label><select id="delete-verify-method"></select></div>
+    <div class="form-group"><label>验证码</label><input type="text" id="delete-verify-code" placeholder="000000" maxlength="6"></div>
+</div><div class="modal-footer"><button class="btn btn-secondary modal-cancel">取消</button><button class="btn btn-danger" id="confirm-delete-2fa">删除</button></div></div></div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+{% endblock %}

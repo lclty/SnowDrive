@@ -1,0 +1,114 @@
+﻿{% extends "base.html" %}
+{% block title %}文件管理 - SnowDrive{% endblock %}
+{% block body %}
+<div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="app-logo"><i class="fa-solid fa-snowflake"></i><span>SnowDrive</span></div>
+            <button class="sidebar-toggle" id="sidebar-toggle"><i class="fa-solid fa-bars"></i></button>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="/files" class="nav-item active"><i class="fa-solid fa-folder-open"></i><span>文件管理</span></a>
+            <a href="/settings" class="nav-item"><i class="fa-solid fa-gear"></i><span>设置</span></a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="storage-info" id="storage-info"><i class="fa-solid fa-hard-drive"></i><span>加载中...</span></div>
+            <div class="user-info">
+                <div class="user-avatar-sm" id="sidebar-avatar"><img src="/api/settings/avatar" alt="Avatar" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><i class="fa-solid fa-user" style="display:none;"></i></div>
+                <span class="user-name">{{ username }}</span>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="logout-btn"><i class="fa-solid fa-right-from-bracket"></i><span>退出</span></button>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="top-bar">
+            <div class="top-bar-left">
+                <button class="btn btn-icon mobile-sidebar-toggle" id="mobile-sidebar-toggle"><i class="fa-solid fa-bars"></i></button>
+                <div class="breadcrumbs" id="breadcrumbs"></div>
+            </div>
+            <div class="top-bar-right">
+                <div class="search-box"><i class="fa-solid fa-search"></i><input type="text" id="search-input" placeholder="搜索文件..."></div>
+                <button class="btn btn-icon theme-toggle-btn-inline" id="theme-toggle-inline" title="切换深浅色模式"><i class="fa-solid fa-moon"></i></button>
+                <button class="btn btn-icon" id="download-manager-toggle" title="进度管理"><i class="fa-solid fa-list-check"></i><span id="dm-badge" class="badge-dot" style="display:none;"></span></button>
+            </div>
+        </header>
+
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <button class="btn btn-primary btn-sm" id="btn-new-folder"><i class="fa-solid fa-folder-plus"></i> 新建文件夹</button>
+                <button class="btn btn-secondary btn-sm" id="btn-new-file"><i class="fa-solid fa-file-circle-plus"></i> 新建文件</button>
+                <button class="btn btn-secondary btn-sm" id="btn-select-toggle"><i class="fa-solid fa-square-check"></i> 全选</button>
+                <button class="btn btn-secondary btn-sm" id="btn-upload"><i class="fa-solid fa-upload"></i> 上传</button>
+                <button class="btn btn-secondary btn-sm" id="btn-remote-download"><i class="fa-solid fa-cloud-arrow-down"></i> 远程下载</button>
+                <button class="btn btn-secondary btn-sm" id="btn-download-selected" disabled><i class="fa-solid fa-download"></i> 下载</button>
+                <button class="btn btn-danger btn-sm" id="btn-delete-selected" disabled><i class="fa-solid fa-trash"></i> 删除</button>
+            </div>
+            <div class="toolbar-right">
+                <div class="view-toggle">
+                    <button class="btn btn-icon view-btn active" data-view="list"><i class="fa-solid fa-list"></i></button>
+                    <button class="btn btn-icon view-btn" data-view="grid"><i class="fa-solid fa-table-cells"></i></button>
+                </div>
+                <select id="sort-select" class="select-sm">
+                    <option value="name">按名称</option>
+                    <option value="modified">按日期</option>
+                    <option value="size">按大小</option>
+                    <option value="type">按类型</option>
+                </select>
+                <button class="btn btn-icon" id="sort-order-btn"><i class="fa-solid fa-arrow-down-a-z"></i></button>
+            </div>
+        </div>
+
+        <div class="file-area" id="file-area">
+            <div class="loading-container" id="loading-indicator"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><p>加载中...</p></div>
+            <div class="file-list list-view" id="file-list"></div>
+            <div class="empty-state" id="empty-state" style="display:none;"><i class="fa-solid fa-folder-open fa-4x"></i><h3>此文件夹为空</h3><p>上传文件或创建新文件夹</p></div>
+            <div class="empty-state error-state" id="error-state" style="display:none;"><i class="fa-solid fa-triangle-exclamation fa-4x"></i><h3>加载失败</h3><p id="error-state-message"></p><button class="btn btn-primary" onclick="loadFiles()">重试</button></div>
+        </div>
+
+        <div class="info-bar" id="info-bar">
+            <span id="file-count-info">—</span>
+            <span id="selection-info" style="display:none;"></span>
+        </div>
+    </main>
+</div>
+
+<!-- Progress Manager Mini Window (Uploads + Remote Downloads) -->
+<div class="download-mini-window" id="download-mini-window">
+    <div class="dmw-header" id="dmw-header">
+        <span><i class="fa-solid fa-list-check"></i> 进度管理</span>
+        <div class="dmw-actions">
+            <button class="btn btn-icon dmw-minimize" id="dmw-minimize"><i class="fa-solid fa-minus"></i></button>
+            <button class="btn btn-icon dmw-close" id="dmw-close"><i class="fa-solid fa-times"></i></button>
+        </div>
+    </div>
+    <div class="dmw-body" id="dmw-body">
+        <div class="dmw-tabs">
+            <button class="dmw-tab active" data-tab="uploads"><i class="fa-solid fa-upload"></i> 上传管理 <span class="dmw-count" id="dmw-uploads-count" style="display:none;"></span></button>
+            <button class="dmw-tab" data-tab="downloads"><i class="fa-solid fa-cloud-arrow-down"></i> 远程下载 <span class="dmw-count" id="dmw-downloads-count" style="display:none;"></span></button>
+        </div>
+        <div class="dmw-content">
+            <div class="dmw-panel" id="dmw-uploads-panel">
+                <div class="umw-list" id="umw-list"><p class="umw-empty">暂无上传任务</p></div>
+            </div>
+            <div class="dmw-panel" id="dmw-downloads-panel" style="display:none;">
+                <div class="dmw-list" id="dmw-list"><p class="dmw-empty">暂无下载任务</p></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+<div class="modal" id="modal-new-folder"><div class="modal-content modal-sm"><div class="modal-header"><h3><i class="fa-solid fa-folder-plus"></i> 新建文件夹</h3><button class="modal-close">&times;</button></div><div class="modal-body"><div class="form-group"><label>文件夹名称</label><input type="text" id="new-folder-name" placeholder="新建文件夹" autofocus></div></div><div class="modal-footer"><button class="btn btn-secondary modal-cancel">取消</button><button class="btn btn-primary" id="confirm-new-folder">创建</button></div></div></div>
+<div class="modal" id="modal-new-file"><div class="modal-content modal-sm"><div class="modal-header"><h3><i class="fa-solid fa-file-circle-plus"></i> 新建文件</h3><button class="modal-close">&times;</button></div><div class="modal-body"><div class="form-group"><label>文件名</label><input type="text" id="new-file-name" placeholder="新建文件.txt" autofocus></div></div><div class="modal-footer"><button class="btn btn-secondary modal-cancel">取消</button><button class="btn btn-primary" id="confirm-new-file">创建</button></div></div></div>
+<div class="modal" id="modal-rename"><div class="modal-content modal-sm"><div class="modal-header"><h3><i class="fa-solid fa-pen-to-square"></i> 重命名</h3><button class="modal-close">&times;</button></div><div class="modal-body"><div class="form-group"><label>新名称</label><input type="text" id="rename-input" autofocus></div></div><div class="modal-footer"><button class="btn btn-secondary modal-cancel">取消</button><button class="btn btn-primary" id="confirm-rename">确认</button></div></div></div>
+<div class="modal" id="modal-remote-download"><div class="modal-content modal-md"><div class="modal-header"><h3><i class="fa-solid fa-cloud-arrow-down"></i> 远程下载</h3><button class="modal-close">&times;</button></div><div class="modal-body"><div class="form-group"><label>文件 URL</label><input type="url" id="remote-url" placeholder="https://..." autofocus></div><div class="form-group"><label>保存文件名（可选）</label><input type="text" id="remote-filename" placeholder="留空自动识别"></div></div><div class="modal-footer"><button class="btn btn-secondary modal-cancel">取消</button><button class="btn btn-primary" id="confirm-remote-download">开始下载</button></div></div></div>
+<div class="modal" id="modal-delete"><div class="modal-content modal-sm"><div class="modal-header"><h3><i class="fa-solid fa-triangle-exclamation"></i> 确认删除</h3><button class="modal-close">&times;</button></div><div class="modal-body"><p id="delete-message"></p></div><div class="modal-footer"><button class="btn btn-secondary modal-cancel">取消</button><button class="btn btn-danger" id="confirm-delete">删除</button></div></div></div>
+
+<input type="file" id="file-input" multiple hidden>
+<input type="file" id="folder-input" webkitdirectory multiple hidden>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/filemanager.js') }}"></script>
+{% endblock %}

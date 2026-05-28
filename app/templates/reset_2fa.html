@@ -1,0 +1,146 @@
+﻿{% extends "base.html" %}
+{% block title %}重新设置 2FA - SnowDrive{% endblock %}
+{% block body %}
+<div class="auth-container">
+    <div class="auth-card setup-2fa-card">
+        <div class="auth-header">
+            <div class="auth-logo"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <h1>重新设置双因素认证</h1>
+            <p class="auth-subtitle">您的 2FA 已被管理员重置，必须重新设置才能继续。</p>
+        </div>
+        <div class="alert alert-warning"><i class="fa-solid fa-circle-exclamation"></i> 在设置新的 2FA 之前，您无法访问文件。</div>
+        <div id="reset-container">
+            <div id="method-select">
+                <p class="step-description">选择一种方式重新设置 2FA：</p>
+                <div class="method-options">
+                    <button class="method-option" data-method="totp">
+                        <i class="fa-solid fa-mobile-screen-button fa-2x"></i>
+                        <strong>身份验证器应用</strong>
+                        <small>Microsoft / Google Authenticator</small>
+                    </button>
+                    <button class="method-option" data-method="webauthn">
+                        <i class="fa-solid fa-fingerprint fa-2x"></i>
+                        <strong>Windows Hello / Passkey</strong>
+                        <small>指纹、面容或 PIN 码</small>
+                    </button>
+                </div>
+            </div>
+            <div id="totp-setup" style="display:none;">
+                <button class="btn btn-ghost btn-sm back-to-methods"><i class="fa-solid fa-arrow-left"></i> 返回</button>
+                <div class="qr-container"><img id="totp-qr" src="" alt="QR" style="display:none;"><div id="totp-qr-placeholder" class="qr-placeholder"><i class="fa-solid fa-qrcode fa-3x"></i><p>点击生成二维码</p></div></div>
+                <div class="secret-display" id="totp-secret-display" style="display:none;"><label>密钥：</label><code id="totp-secret-text"></code><button class="btn btn-sm" id="copy-secret"><i class="fa-solid fa-copy"></i></button></div>
+                <button class="btn btn-primary btn-full" id="totp-generate-btn"><i class="fa-solid fa-qrcode"></i> 生成二维码</button>
+                <div id="totp-verify-area" style="display:none;">
+                    <div class="form-group"><label>验证码</label><input type="text" id="totp-code" placeholder="000000" inputmode="numeric" maxlength="6"></div>
+                    <button class="btn btn-primary btn-full" id="totp-verify-btn"><i class="fa-solid fa-check"></i> 验证</button>
+                </div>
+            </div>
+            <div id="webauthn-setup" style="display:none;">
+                <button class="btn btn-ghost btn-sm back-to-methods"><i class="fa-solid fa-arrow-left"></i> 返回</button>
+                <p class="step-description">使用您的设备生物识别或 PIN 码进行注册。</p>
+                <button class="btn btn-primary btn-full" id="webauthn-register-btn"><i class="fa-solid fa-fingerprint"></i> 注册 Passkey</button>
+                <p id="webauthn-status" style="text-align:center;margin-top:0.5rem;color:var(--text-muted);font-size:0.85rem;"></p>
+            </div>
+        </div>
+        <div class="auth-footer"><p id="error-message" class="error-message" style="display:none;"></p></div>
+    </div>
+    <button class="theme-toggle-btn" id="theme-toggle"><i class="fa-solid fa-moon"></i></button>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function() {
+    var errorEl = document.getElementById('error-message');
+    function showError(msg) { errorEl.textContent = msg; errorEl.style.display = 'block'; setTimeout(function() { errorEl.style.display = 'none'; }, 5000); }
+    function setLoading(b, l) {
+        if (l) { b.disabled = true; b.dataset.orig = b.innerHTML; b.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ...'; }
+        else { b.disabled = false; if (b.dataset.orig) b.innerHTML = b.dataset.orig; }
+    }
+    function arrayBufferToBase64url(buf) { var bytes = new Uint8Array(buf), bin = ''; for (var i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]); return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+    // Theme handled centrally in app.js
+    // Method select
+    document.querySelectorAll('.method-option').forEach(function(b) {
+        b.addEventListener('click', function() {
+            document.getElementById('method-select').style.display = 'none';
+            if (this.dataset.method === 'totp') document.getElementById('totp-setup').style.display = 'block';
+            else document.getElementById('webauthn-setup').style.display = 'block';
+        });
+    });
+    document.querySelectorAll('.back-to-methods').forEach(function(b) {
+        b.addEventListener('click', function() {
+            document.getElementById('totp-setup').style.display = 'none';
+            document.getElementById('webauthn-setup').style.display = 'none';
+            document.getElementById('method-select').style.display = 'block';
+        });
+    });
+    // TOTP
+    document.getElementById('totp-generate-btn').addEventListener('click', async function() {
+        setLoading(this, true);
+        try {
+            var resp = await fetch('/api/auth/reset-2fa', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({action: 'totp_generate'}) });
+            var data = await resp.json();
+            if (resp.ok) {
+                document.getElementById('totp-qr-placeholder').style.display = 'none';
+                document.getElementById('totp-qr').src = data.qr_code;
+                document.getElementById('totp-qr').style.display = 'block';
+                document.getElementById('totp-secret-text').textContent = data.secret;
+                document.getElementById('totp-secret-display').style.display = 'flex';
+                this.style.display = 'none';
+                document.getElementById('totp-verify-area').style.display = 'block';
+                document.getElementById('totp-code').focus();
+            } else showError(data.error);
+        } catch(e) { showError('Network error.'); }
+        finally { setLoading(this, false); }
+    });
+    document.getElementById('copy-secret').addEventListener('click', function() {
+        navigator.clipboard.writeText(document.getElementById('totp-secret-text').textContent);
+        var b = this; b.innerHTML = '<i class="fa-solid fa-check"></i>'; setTimeout(function() { b.innerHTML = '<i class="fa-solid fa-copy"></i>'; }, 2000);
+    });
+    document.getElementById('totp-code').addEventListener('input', function() { this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6); });
+    document.getElementById('totp-verify-btn').addEventListener('click', async function() {
+        var code = document.getElementById('totp-code').value.trim();
+        if (code.length !== 6) { showError('Enter 6-digit code.'); return; }
+        setLoading(this, true);
+        try {
+            var resp = await fetch('/api/auth/reset-2fa', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({action: 'totp_verify', code: code}) });
+            var data = await resp.json();
+            if (resp.ok) window.location.href = '/files';
+            else showError(data.error);
+        } catch(e) { showError('Network error.'); }
+        finally { setLoading(this, false); }
+    });
+    // WebAuthn
+    document.getElementById('webauthn-register-btn').addEventListener('click', async function() {
+        var statusEl = document.getElementById('webauthn-status');
+        statusEl.textContent = 'Preparing...';
+        setLoading(this, true);
+        try {
+            var beginResp = await fetch('/api/auth/reset-2fa', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({action: 'webauthn_register_begin'}) });
+            var beginData;
+            try {
+                var ct = beginResp.headers.get('content-type') || '';
+                if (ct.indexOf('application/json') !== -1) beginData = await beginResp.json();
+                else beginData = { error: await beginResp.text() };
+            } catch (err) { beginData = { error: 'Failed to parse server response.' }; }
+            if (!beginResp.ok) { showError(beginData.error); statusEl.textContent = ''; setLoading(this, false); return; }
+            var options = beginData.options;
+            options.challenge = Uint8Array.from(atob(options.challenge.replace(/-/g, '+').replace(/_/g, '/')), function(c) { return c.charCodeAt(0); });
+            options.user.id = Uint8Array.from(atob(options.user.id.replace(/-/g, '+').replace(/_/g, '/')), function(c) { return c.charCodeAt(0); });
+            statusEl.textContent = 'Follow browser prompt...';
+            var credential = await navigator.credentials.create({ publicKey: options });
+            var credData = {
+                id: arrayBufferToBase64url(credential.rawId),
+                rawId: arrayBufferToBase64url(credential.rawId),
+                response: { attestationObject: arrayBufferToBase64url(credential.response.attestationObject), clientDataJSON: arrayBufferToBase64url(credential.response.clientDataJSON) },
+                type: credential.type
+            };
+            var verifyResp = await fetch('/api/auth/reset-2fa', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({action: 'webauthn_register_verify', credential: credData}) });
+            var verifyData = await verifyResp.json();
+            if (verifyResp.ok) window.location.href = '/files';
+            else { showError(verifyData.error); statusEl.textContent = ''; }
+        } catch(e) { statusEl.textContent = ''; if (e.name !== 'NotAllowedError') showError('WebAuthn error: ' + e.message); }
+        finally { setLoading(this, false); }
+    });
+})();
+</script>
+{% endblock %}
