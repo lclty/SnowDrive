@@ -136,12 +136,13 @@ server {
 
 server {
     # Check your NGINX version first with 'nginx -v'
-
-    # If your NGINX version < 1.25.1:
+    ## If your NGINX version < 1.25.1:
     listen 443 ssl http2;
-    # If your NGINX version >= 1.25.1:
-    listen 443 ssl
-    http2 on;
+    listen [::]:443 ssl http2;
+    ## If your NGINX version >= 1.25.1:
+    #listen 443 ssl;
+    #listen [::]:443 ssl;
+    #http2 on;
 
     # To enable HTTP/3, uncomment the lines below
     # Make sure your NGINX build supports HTTP/3 before enabling

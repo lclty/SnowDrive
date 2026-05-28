@@ -135,15 +135,16 @@ server {
 
 server {
     # 请先通过 'nginx -v' 查看 NGINX 版本
-
-    # 如果你使用的 NGINX 版本 < 1.25.1:
+    ## 如果你使用的 NGINX 版本 < 1.25.1:
     listen 443 ssl http2;
-    # 如果你使用的NGINX版本 >= 1.25.1:
-    listen 443 ssl
-    http2 on;
+    listen [::]:443 ssl http2;
+    ## 如果你使用的NGINX版本 >= 1.25.1:
+    #listen 443 ssl;
+    #listen [::]:443 ssl;
+    #http2 on;
 
-    # 如果你想启用 http 3 ，请取消注释下面这几行
-    # 请在启用前确保你的 NGINX 构建支持 http 3
+    # 如果你想启用 HTTP/3 ，请取消注释下面这几行
+    # 请在启用前确保你的 NGINX 构建支持 HTTP/3
     #listen 443 quic;
     #listen [::]:443 quic;
     #add_header Alt-Svc 'h3=":443"; ma=86400';
